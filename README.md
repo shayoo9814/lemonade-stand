@@ -97,6 +97,7 @@ is seeded, that player is used (so ``GET /auth/me`` can bootstrap the UI).
 5. Day ends when stock cannot cover a sale **or** hour reaches 24 → leftover **ice is discarded**, then back to `day_start` (or `game_over` if capital is empty and inventory cannot make a lemonade)
 
 ## Potential Extensions
+* Add proper multi-tenancy support
 * Add ability to add an item to the menu
 * Add proper auth layer with proper log-in page 
 * Add ability to stream live prices into db for fluctuating ingredient pricing 
