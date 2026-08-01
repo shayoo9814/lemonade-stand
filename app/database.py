@@ -5,8 +5,9 @@ Stores entities and exposes get/set/list/clear helpers only. Business rules
 live in entity modules (``app.ingredients``, ``app.inventory``, etc.).
 Per-player general ledger logs are owned by ``app.ledger`` and mirrored onto
 ``User.general_ledger``. Ingredient rows are an append-only price history
-(``append_ingredient`` only; no in-place updates). ``clear_all`` /
-``reset_db`` are process/test bootstrap only.
+(``append_ingredient`` only; no in-place updates). Inventory and lemonade
+menus are keyed by ``user_id``. ``clear_all`` / ``reset_db`` are
+process/test bootstrap only.
 """
 
 import json
@@ -17,9 +18,16 @@ from app import ledger as ledger_store
 from app.models import Ingredient, Inventory, Lemonade, User
 
 _users: dict[str, User] = {}
+# Shared supermarket catalog: ingredient name → append-only price history.
+# Not keyed by user — market prices are the same for every stand; per-player
+# stock lives in ``_inventory``, sell prices in ``_lemonades``.
 _ingredients: dict[str, list[Ingredient]] = {}
-_inventory: dict[str, Inventory] = {}
-_lemonades: dict[str, Lemonade] = {}
+# user_id → ingredient_name → Inventory
+_inventory: dict[str, dict[str, Inventory]] = {}
+# user_id → lemonade_name → Lemonade
+_lemonades: dict[str, dict[str, Lemonade]] = {}
+# Seed menu templates cloned onto each player
+_lemonade_templates: list[Lemonade] = []
 
 
 def _load_seed_data() -> None:
@@ -45,14 +53,25 @@ def _load_seed_data() -> None:
     for item in data.get("ingredients", []):
         append_ingredient(Ingredient(**item))
 
-    for item in data.get("inventory", []):
-        set_inventory(Inventory(**item))
-
     catalog = get_ingredients_catalog()
+    _lemonade_templates.clear()
     for item in data.get("lemonades", []):
         lemonade = Lemonade(**item)
         lemonade.ensure_price_covers_recipe(catalog)
-        set_lemonade(lemonade)
+        _lemonade_templates.append(lemonade)
+
+    for user in get_all_users():
+        for lemonade in _lemonade_templates:
+            set_lemonade(user.id, lemonade.model_copy(deep=True))
+
+    for item in data.get("inventory", []):
+        user_id = item["user_id"]
+        entry = Inventory(
+            ingredient_name=item["ingredient_name"],
+            amount=item["amount"],
+            unit=item["unit"],
+        )
+        set_inventory(user_id, entry)
 
 
 def clear_all() -> None:
@@ -61,6 +80,7 @@ def clear_all() -> None:
     _ingredients.clear()
     _inventory.clear()
     _lemonades.clear()
+    _lemonade_templates.clear()
 
 
 def reset_db() -> None:
@@ -123,37 +143,45 @@ def get_ingredients_catalog() -> dict[str, Ingredient]:
     return catalog
 
 
-# --- Inventory ---
+# --- Inventory (per player) ---
 
-def get_inventory(ingredient_name: str) -> Optional[Inventory]:
-    return _inventory.get(ingredient_name)
-
-
-def get_all_inventory() -> list[Inventory]:
-    return list(_inventory.values())
+def get_inventory(user_id: str, ingredient_name: str) -> Optional[Inventory]:
+    return _inventory.get(user_id, {}).get(ingredient_name)
 
 
-def set_inventory(entry: Inventory) -> None:
-    _inventory[entry.ingredient_name] = entry
+def get_all_inventory(user_id: str) -> list[Inventory]:
+    return list(_inventory.get(user_id, {}).values())
 
 
-def clear_inventory() -> None:
-    """Remove all on-hand stock entries."""
-    _inventory.clear()
+def set_inventory(user_id: str, entry: Inventory) -> None:
+    _inventory.setdefault(user_id, {})[entry.ingredient_name] = entry
 
 
-# --- Lemonades ---
-
-def get_lemonade(name: str) -> Optional[Lemonade]:
-    return _lemonades.get(name)
-
-
-def get_all_lemonades() -> list[Lemonade]:
-    return list(_lemonades.values())
+def clear_inventory(user_id: str) -> None:
+    """Remove all on-hand stock entries for a player."""
+    _inventory.pop(user_id, None)
 
 
-def set_lemonade(lemonade: Lemonade) -> None:
-    _lemonades[lemonade.name] = lemonade
+# --- Lemonades (per-player menu) ---
+
+def get_lemonade(user_id: str, name: str) -> Optional[Lemonade]:
+    return _lemonades.get(user_id, {}).get(name)
+
+
+def get_all_lemonades(user_id: str) -> list[Lemonade]:
+    return list(_lemonades.get(user_id, {}).values())
+
+
+def set_lemonade(user_id: str, lemonade: Lemonade) -> None:
+    _lemonades.setdefault(user_id, {})[lemonade.name] = lemonade
+
+
+def ensure_user_menu(user_id: str) -> None:
+    """Clone seed menu templates onto a player if they have no menu yet."""
+    if _lemonades.get(user_id):
+        return
+    for lemonade in _lemonade_templates:
+        set_lemonade(user_id, lemonade.model_copy(deep=True))
 
 
 # Load seed data on module import

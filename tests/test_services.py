@@ -28,28 +28,37 @@ def fresh_state():
 
 class TestInventoryService:
     def test_add_stock_increases_on_hand(self):
-        entry = inventory_service.add_stock("lemons", Decimal("3"))
+        entry = inventory_service.add_stock(USER_ID, "lemons", Decimal("3"))
         assert entry.amount == Decimal("3")
-        assert inventory_service.get("lemons").amount == Decimal("3")
+        assert inventory_service.get(USER_ID, "lemons").amount == Decimal("3")
 
     def test_has_sufficient_and_deduct(self):
-        inventory_service.add_stock("lemons", Decimal("12"))
-        inventory_service.add_stock("cups", Decimal("50"))
-        assert inventory_service.has_sufficient({"lemons": Decimal("2"), "cups": Decimal("1")})
-        assert inventory_service.deduct({"lemons": Decimal("2"), "cups": Decimal("1")})
-        assert inventory_service.get("lemons").amount == Decimal("10")
-        assert inventory_service.get("cups").amount == Decimal("49")
+        inventory_service.add_stock(USER_ID, "lemons", Decimal("12"))
+        inventory_service.add_stock(USER_ID, "cups", Decimal("50"))
+        assert inventory_service.has_sufficient(
+            USER_ID, {"lemons": Decimal("2"), "cups": Decimal("1")}
+        )
+        assert inventory_service.deduct(
+            USER_ID, {"lemons": Decimal("2"), "cups": Decimal("1")}
+        )
+        assert inventory_service.get(USER_ID, "lemons").amount == Decimal("10")
+        assert inventory_service.get(USER_ID, "cups").amount == Decimal("49")
 
     def test_deduct_fails_when_short(self):
-        inventory_service.add_stock("lemons", Decimal("12"))
-        assert inventory_service.deduct({"lemons": Decimal("100")}) is False
-        assert inventory_service.get("lemons").amount == Decimal("12")
+        inventory_service.add_stock(USER_ID, "lemons", Decimal("12"))
+        assert inventory_service.deduct(USER_ID, {"lemons": Decimal("100")}) is False
+        assert inventory_service.get(USER_ID, "lemons").amount == Decimal("12")
+
+    def test_stock_is_isolated_per_player(self):
+        inventory_service.add_stock(USER_ID, "lemons", Decimal("5"))
+        assert inventory_service.get("other", "lemons") is None
+        assert inventory_service.list_all("other") == []
 
 
 class TestIngredientsService:
     def test_buy_updates_inventory_and_player_ledger(self):
         assert ingredients_service.buy(USER_ID, "lemons", unit_count=Decimal("10")) is True
-        assert inventory_service.get("lemons").amount == Decimal("10")
+        assert inventory_service.get(USER_ID, "lemons").amount == Decimal("10")
         latest = get_ledger(USER_ID)
         assert latest is not None
         assert latest.current_capital == Decimal("24")
@@ -74,7 +83,7 @@ class TestIngredientsService:
         )
         assert ingredients_service.buy(USER_ID, "sugar", unit_count=Decimal("2")) is True
         # 2 units × ($4.75 / 5) = $1.90; inventory +2
-        assert inventory_service.get("sugar").amount == Decimal("2")
+        assert inventory_service.get(USER_ID, "sugar").amount == Decimal("2")
         assert get_ledger(USER_ID).current_capital == Decimal("28.10")
 
     def test_buy_unknown_ingredient_fails(self):

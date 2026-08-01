@@ -56,9 +56,9 @@ def get_ingredients():
 
 
 @router.get("/inventory", response_model=list[Inventory])
-def get_inventory():
-    """List on-hand inventory stock."""
-    return inventory_service.list_all()
+def get_inventory(current: CurrentUser) -> list[Inventory]:
+    """List the current player's on-hand inventory stock."""
+    return inventory_service.list_all(current.id)
 
 
 @router.post("/users/opening-balance", response_model=CapitalResponse)
@@ -104,9 +104,9 @@ def buy_ingredients(req: BuyIngredientsRequest, current: CurrentUser) -> bool:
 
 
 @router.get("/lemonades", response_model=list[Lemonade])
-def get_lemonades() -> list[Lemonade]:
-    """List menu items and their recipes."""
-    return lemonades_service.list_all()
+def get_lemonades(current: CurrentUser) -> list[Lemonade]:
+    """List the current player's menu items and their recipes."""
+    return lemonades_service.list_all(current.id)
 
 
 @router.post("/lemonades/sell", response_model=bool)
@@ -123,7 +123,7 @@ def set_lemonade_price(req: SetLemonadePriceRequest, current: CurrentUser) -> bo
 
 @router.post("/game/start", response_model=GameSession)
 def start_game(current: CurrentUser) -> GameSession:
-    """Start a new game with seed capital and empty inventory."""
+    """Start a new game with seed capital and empty inventory for this player."""
     session = game_service.start_game(current.id)
     if session is None:
         raise HTTPException(status_code=404, detail="user not found")

@@ -26,11 +26,11 @@ AUTH = {USER_ID_HEADER: USER_ID}
 
 def _stock_classic(servings: int = 12) -> None:
     """Put enough classic-recipe ingredients on hand for ``servings`` sales."""
-    inventory_service.add_stock("lemons", Decimal(servings))
+    inventory_service.add_stock(USER_ID, "lemons", Decimal(servings))
     sugar = (Decimal(servings) * Decimal("0.05")).to_integral_value(rounding="ROUND_UP")
-    inventory_service.add_stock("sugar", sugar)
-    inventory_service.add_stock("cups", Decimal(servings))
-    inventory_service.add_stock("ice", Decimal(servings))
+    inventory_service.add_stock(USER_ID, "sugar", sugar)
+    inventory_service.add_stock(USER_ID, "cups", Decimal(servings))
+    inventory_service.add_stock(USER_ID, "ice", Decimal(servings))
 
 
 @pytest.fixture(autouse=True)
@@ -71,7 +71,7 @@ class TestListIngredients:
 
 class TestListLemonades:
     def test_list_lemonades_includes_recipes(self, client):
-        resp = client.get("/lemonades")
+        resp = client.get("/lemonades", headers=AUTH)
         assert resp.status_code == 200
         data = resp.json()
         assert len(data) == 1
@@ -97,7 +97,7 @@ class TestBuyIngredients:
         assert resp.json() is True
 
         # 10 units at $0.60/each → +10 inventory; cost $6.00
-        lemons = get_inventory("lemons")
+        lemons = get_inventory(USER_ID, "lemons")
         assert lemons is not None
         assert lemons.amount == 10
         latest = get_ledger(USER_ID)
@@ -127,7 +127,7 @@ class TestBuyIngredients:
         )
         assert resp.status_code == 200
         assert resp.json() is True
-        assert get_inventory("sugar").amount == 2
+        assert get_inventory(USER_ID, "sugar").amount == 2
         assert get_ledger(USER_ID).current_capital == Decimal("28.10")
         assert get_ledger(USER_ID).expenses_incurred == Decimal("1.90")
         assert get_ingredient("sugar").amount == Decimal("5")
@@ -160,7 +160,7 @@ class TestBuyIngredients:
         assert resp.status_code == 200
         assert resp.json() is False
         assert get_ledger(USER_ID).current_capital == 30
-        assert get_inventory("sugar") is None
+        assert get_inventory(USER_ID, "sugar") is None
         assert len(list_entries(USER_ID)) == before_len
 
 
@@ -175,10 +175,10 @@ class TestSellLemonade:
         assert resp.status_code == 200
         assert resp.json() is True
 
-        assert get_inventory("lemons").amount == 11
-        assert get_inventory("sugar").amount == Decimal("0.95")
-        assert get_inventory("cups").amount == 11
-        assert get_inventory("ice").amount == 11
+        assert get_inventory(USER_ID, "lemons").amount == 11
+        assert get_inventory(USER_ID, "sugar").amount == Decimal("0.95")
+        assert get_inventory(USER_ID, "cups").amount == 11
+        assert get_inventory(USER_ID, "ice").amount == 11
 
         latest = get_ledger(USER_ID)
         assert latest is not None
@@ -201,10 +201,10 @@ class TestSellLemonade:
         assert resp.status_code == 200
         assert resp.json() is True
 
-        assert get_inventory("lemons").amount == 9
-        assert get_inventory("sugar").amount == Decimal("0.85")
-        assert get_inventory("cups").amount == 9
-        assert get_inventory("ice").amount == 9
+        assert get_inventory(USER_ID, "lemons").amount == 9
+        assert get_inventory(USER_ID, "sugar").amount == Decimal("0.85")
+        assert get_inventory(USER_ID, "cups").amount == 9
+        assert get_inventory(USER_ID, "ice").amount == 9
         assert get_ledger(USER_ID).current_capital == Decimal("30") + CLASSIC_PRICE * 3
         assert get_ledger(USER_ID).amount == CLASSIC_PRICE * 3
         assert len(list_entries(USER_ID)) == 2
@@ -235,7 +235,7 @@ class TestSellLemonade:
         )
         assert resp.status_code == 200
         assert resp.json() is False
-        assert get_inventory("lemons").amount == 0
+        assert get_inventory(USER_ID, "lemons").amount == 0
         assert get_ledger(USER_ID).current_capital == Decimal("30") + CLASSIC_PRICE * 12
         # opening + one bulk sale
         assert len(list_entries(USER_ID)) == 2
@@ -253,7 +253,7 @@ class TestGameRoutes:
         assert data["hour"] == 0
         assert data["phase"] == "day_start"
         assert get_ledger(USER_ID).current_capital == Decimal("30.00")
-        assert client.get("/inventory").json() == []
+        assert client.get("/inventory", headers=AUTH).json() == []
 
         got = client.get("/game", headers=AUTH)
         assert got.status_code == 200
@@ -283,13 +283,13 @@ class TestGameRoutes:
 
 class TestInventoryAndCapital:
     def test_list_inventory(self, client):
-        resp = client.get("/inventory")
+        resp = client.get("/inventory", headers=AUTH)
         assert resp.status_code == 200
         assert resp.json() == []
 
     def test_list_inventory_includes_units(self, client):
         _stock_classic(servings=2)
-        resp = client.get("/inventory")
+        resp = client.get("/inventory", headers=AUTH)
         assert resp.status_code == 200
         by_name = {row["ingredient_name"]: row for row in resp.json()}
         assert by_name["lemons"]["unit"] == "each"

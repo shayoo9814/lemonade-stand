@@ -255,13 +255,13 @@ btnSetPrice.addEventListener("click", async () => {
 });
 
 async function init() {
-  const [me, ingredients, menu] = await Promise.all([
-    api("/auth/me"),
+  const me = await api("/auth/me");
+  userId = me.id;
+  renderPlayer(me);
+  const [ingredients, menu] = await Promise.all([
     api("/ingredients"),
     api("/lemonades"),
   ]);
-  userId = me.id;
-  renderPlayer(me);
   catalog = ingredients;
   renderBuyRows(catalog);
   renderMenu(menu);

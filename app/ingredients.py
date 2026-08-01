@@ -86,5 +86,5 @@ def buy(user_id: str, ingredient_name: str, unit_count: Decimal) -> bool:
         return False
 
     users_service.sync_ledger(user_id)
-    inventory_service.add_stock(ingredient_name, unit_count)
+    inventory_service.add_stock(user_id, ingredient_name, unit_count)
     return True

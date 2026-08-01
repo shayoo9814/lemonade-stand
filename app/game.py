@@ -20,7 +20,7 @@ HOURS_PER_DAY = 24
 HOURLY_DEMAND = Decimal("1")
 DEFAULT_LEMONADE = "classic"
 
-# user_id → session (only one active game is supported; start clears others)
+# user_id → session
 _sessions: dict[str, GameSession] = {}
 
 
@@ -51,7 +51,9 @@ def is_bankrupt(user_id: str) -> bool:
     latest = ledger_store.get_ledger(user_id)
     if latest is None:
         return True
-    return latest.current_capital <= 0 and not inventory_service.can_make_lemonade()
+    return latest.current_capital <= 0 and not inventory_service.can_make_lemonade(
+        user_id
+    )
 
 
 def start_game(user_id: str) -> GameSession | None:
@@ -59,15 +61,14 @@ def start_game(user_id: str) -> GameSession | None:
 
     Clears any existing capital with a reset-ledger row (subtracts the
     current balance to zero), then appends an opening-balance row for
-    ``SEED_CAPITAL``. History is retained. Clears shared inventory and
-    enters ``DAY_START``. Only one active game is kept at a time.
-    Returns None if the user is unknown.
+    ``SEED_CAPITAL``. History is retained. Clears this player's inventory
+    and enters ``DAY_START``. Other players' sessions and stock are
+    untouched. Returns None if the user is unknown.
     """
     if db.get_user(user_id) is None:
         return None
 
-    _sessions.clear()
-    inventory_service.clear_all()
+    inventory_service.clear_all(user_id)
     ledger_store.record_reset_ledger(user_id=user_id)
     ledger_store.record_opening_balance(
         user_id=user_id, current_capital=SEED_CAPITAL
@@ -103,7 +104,7 @@ def _end_day(session: GameSession) -> GameSession:
 
     Ice cannot be carried overnight; other stock remains for the next day.
     """
-    inventory_service.discard_perishables()
+    inventory_service.discard_perishables(session.user_id)
     if is_bankrupt(session.user_id):
         updated = session.model_copy(update={"phase": GamePhase.GAME_OVER})
     else:

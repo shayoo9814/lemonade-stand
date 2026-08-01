@@ -47,17 +47,17 @@ is seeded, that player is used (so ``GET /auth/me`` can bootstrap the UI).
 |--------|------|-------------|
 | GET | /health | Health check |
 | GET | /auth/me | Current user (from ``X-User-Id``, or seeded player) |
-| GET | /ingredients | List stand ingredients and stock |
-| GET | /inventory | On-hand inventory stock |
+| GET | /ingredients | Shared supermarket ingredient catalog |
+| GET | /inventory | Current user's on-hand inventory stock |
 | GET | /users/capital | Current user's capital |
 | GET | /users/ledger | Current user's general ledger entries |
 | DELETE | /users/ledger | Wipe the current user's general ledger |
 | POST | /users/opening-balance | Create opening balance if missing (idempotent) |
 | POST | /ingredients/buy | Buy ingredients (day-start only when a game is active) |
-| GET | /lemonades | List lemonades on the menu (id, name, price, recipe) |
+| GET | /lemonades | Current user's menu (id, name, price, recipe) |
 | POST | /lemonades/sell | Sell lemonade servings (stock + revenue) |
 | POST | /lemonades/price | Set lemonade sell price (day-start only when a game is active) |
-| POST | /game/start | Start a game ($30 seed capital, empty inventory) |
+| POST | /game/start | Start a game ($30 seed capital, empty inventory for this player) |
 | GET | /game | Current game session (day, hour, phase) |
 | POST | /game/continue | Leave day-start prep and start the intra-day clock |
 
@@ -78,8 +78,8 @@ is seeded, that player is used (so ``GET /auth/me`` can bootstrap the UI).
      should not require rewriting route handlers.
 * **In-memory DB as a thin store.** 
    * `app/database` holds dict-backed entities with get/set/list only — no business rules. 
-   * Ingredient prices are append-only version history; the ledger lives in its own module and is   
-     mirrored onto ``User``. 
+   * Ingredient prices are a shared append-only supermarket catalog; inventory and lemonade
+     menus are keyed by player; the ledger lives in its own module and is mirrored onto ``User``.
    * Seed data loads from JSON on import; `reset_db` clears everything for tests.
    * A real database can replace this layer without rewriting domain services.
 * **Ledger timestamps are wall-clock for now.**

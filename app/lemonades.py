@@ -1,7 +1,7 @@
 """
 Lemonade application layer.
 
-Recipe catalog reads and sale orchestration. Persistence is delegated to
+Per-player menu reads and sale orchestration. Persistence is delegated to
 ``app.database``; stock changes go through ``app.inventory``; sale revenue
 is recorded on the player's ledger via ``app.ledger``. Ingredient costs are
 already on purchase rows, so sales credit the full sale price.
@@ -17,14 +17,16 @@ from app import users as users_service
 from app.models import Lemonade
 
 
-def get(name: str) -> Optional[Lemonade]:
-    """Return a lemonade by name, or None if missing."""
-    return db.get_lemonade(name)
+def get(user_id: str, name: str) -> Optional[Lemonade]:
+    """Return a lemonade from the player's menu, or None if missing."""
+    db.ensure_user_menu(user_id)
+    return db.get_lemonade(user_id, name)
 
 
-def list_all() -> list[Lemonade]:
-    """Return every lemonade on the menu."""
-    return db.get_all_lemonades()
+def list_all(user_id: str) -> list[Lemonade]:
+    """Return every lemonade on the player's menu."""
+    db.ensure_user_menu(user_id)
+    return db.get_all_lemonades(user_id)
 
 
 def sell(user_id: str, name: str, amount: Decimal) -> bool:
@@ -41,7 +43,7 @@ def sell(user_id: str, name: str, amount: Decimal) -> bool:
     if db.get_user(user_id) is None:
         return False
 
-    lemonade = db.get_lemonade(name)
+    lemonade = get(user_id, name)
     if lemonade is None:
         return False
 
@@ -49,7 +51,7 @@ def sell(user_id: str, name: str, amount: Decimal) -> bool:
         ingredient_name: required * amount
         for ingredient_name, required in lemonade.recipe.items()
     }
-    if not inventory_service.has_sufficient(requirements):
+    if not inventory_service.has_sufficient(user_id, requirements):
         return False
 
     revenue = lemonade.price * amount
@@ -57,7 +59,7 @@ def sell(user_id: str, name: str, amount: Decimal) -> bool:
         return False
 
     users_service.sync_ledger(user_id)
-    inventory_service.deduct(requirements)
+    inventory_service.deduct(user_id, requirements)
     return True
 
 
@@ -77,9 +79,9 @@ def set_price(user_id: str, name: str, price: Decimal) -> bool:
     if not game_service.day_start_actions_allowed(user_id):
         return False
 
-    lemonade = db.get_lemonade(name)
+    lemonade = get(user_id, name)
     if lemonade is None:
         return False
 
-    db.set_lemonade(lemonade.model_copy(update={"price": price}))
+    db.set_lemonade(user_id, lemonade.model_copy(update={"price": price}))
     return True

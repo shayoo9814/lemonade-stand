@@ -10,11 +10,12 @@ from app import game as game_service
 from app import ingredients as ingredients_service
 from app import inventory as inventory_service
 from app import lemonades as lemonades_service
-from app.database import get_inventory, reset_db
+from app.database import get_inventory, reset_db, set_user
 from app.ledger import get_ledger, list_entries
-from app.models import GamePhase, LedgerAction
+from app.models import GamePhase, LedgerAction, User
 
 USER_ID = "u1"
+USER_ID_2 = "u2"
 CLASSIC_PRICE = Decimal("2.00")
 
 
@@ -32,8 +33,8 @@ class TestStartGame:
         assert session.hour == 0
         assert session.phase == GamePhase.DAY_START
         assert get_ledger(USER_ID).current_capital == Decimal("30.00")
-        assert not inventory_service.can_make_lemonade()
-        assert inventory_service.list_all() == []
+        assert not inventory_service.can_make_lemonade(USER_ID)
+        assert inventory_service.list_all(USER_ID) == []
 
     def test_first_start_seeds_opening_without_reset(self):
         session = game_service.start_game(USER_ID)
@@ -72,14 +73,29 @@ class TestStartGame:
     def test_start_unknown_user_returns_none(self):
         assert game_service.start_game("missing") is None
 
+    def test_start_does_not_clear_other_players(self):
+        set_user(User(id=USER_ID_2, name="Other", email="other@example.com"))
+        game_service.start_game(USER_ID)
+        ingredients_service.buy(USER_ID, "lemons", Decimal("5"))
+        lemonades_service.set_price(USER_ID, "classic", Decimal("3.00"))
+
+        game_service.start_game(USER_ID_2)
+
+        assert game_service.get_session(USER_ID) is not None
+        assert game_service.get_session(USER_ID).phase == GamePhase.DAY_START
+        assert get_inventory(USER_ID, "lemons").amount == Decimal("5")
+        assert lemonades_service.get(USER_ID, "classic").price == Decimal("3.00")
+        assert inventory_service.list_all(USER_ID_2) == []
+        assert get_ledger(USER_ID_2).current_capital == Decimal("30.00")
+
 
 class TestDayStartActions:
     def test_buy_and_set_price_allowed_at_day_start(self):
         game_service.start_game(USER_ID)
         assert ingredients_service.buy(USER_ID, "lemons", Decimal("10")) is True
         assert lemonades_service.set_price(USER_ID, "classic", Decimal("2.50")) is True
-        assert get_inventory("lemons").amount == Decimal("10")
-        assert lemonades_service.get("classic").price == Decimal("2.50")
+        assert get_inventory(USER_ID, "lemons").amount == Decimal("10")
+        assert lemonades_service.get(USER_ID, "classic").price == Decimal("2.50")
 
     def test_buy_and_set_price_blocked_while_running(self):
         game_service.start_game(USER_ID)
@@ -91,15 +107,23 @@ class TestDayStartActions:
 
         assert ingredients_service.buy(USER_ID, "lemons", Decimal("1")) is False
         assert lemonades_service.set_price(USER_ID, "classic", Decimal("3.00")) is False
-        assert lemonades_service.get("classic").price == Decimal("2.00")
+        assert lemonades_service.get(USER_ID, "classic").price == Decimal("2.00")
 
     def test_set_price_allows_zero_and_below_recipe_cost(self):
         game_service.start_game(USER_ID)
         # classic recipe cost is 0.8275 — below-cost and free pricing are allowed
         assert lemonades_service.set_price(USER_ID, "classic", Decimal("0.50")) is True
-        assert lemonades_service.get("classic").price == Decimal("0.50")
+        assert lemonades_service.get(USER_ID, "classic").price == Decimal("0.50")
         assert lemonades_service.set_price(USER_ID, "classic", Decimal("0")) is True
-        assert lemonades_service.get("classic").price == Decimal("0")
+        assert lemonades_service.get(USER_ID, "classic").price == Decimal("0")
+
+    def test_set_price_is_per_player(self):
+        set_user(User(id=USER_ID_2, name="Other", email="other@example.com"))
+        game_service.start_game(USER_ID)
+        game_service.start_game(USER_ID_2)
+        assert lemonades_service.set_price(USER_ID, "classic", Decimal("4.00")) is True
+        assert lemonades_service.get(USER_ID, "classic").price == Decimal("4.00")
+        assert lemonades_service.get(USER_ID_2, "classic").price == Decimal("2.00")
 
 
 class TestContinueAndTick:
@@ -139,7 +163,7 @@ class TestContinueAndTick:
         assert session is not None
         assert session.hour == 1
         assert session.phase == GamePhase.RUNNING
-        assert get_inventory("lemons").amount == Decimal("11")
+        assert get_inventory(USER_ID, "lemons").amount == Decimal("11")
         assert get_ledger(USER_ID).current_capital == capital_after_buy + CLASSIC_PRICE
 
     def test_stock_exhaustion_ends_day(self):
@@ -176,13 +200,13 @@ class TestContinueAndTick:
 
         # Sell the only possible serving; leftover ice remains until EOD
         assert game_service.tick(USER_ID).phase == GamePhase.RUNNING
-        assert get_inventory("ice").amount == Decimal("5")
-        assert get_inventory("lemons").amount == Decimal("0")
+        assert get_inventory(USER_ID, "ice").amount == Decimal("5")
+        assert get_inventory(USER_ID, "lemons").amount == Decimal("0")
 
         session = game_service.tick(USER_ID)
         assert session.phase == GamePhase.DAY_START
         assert session.day == 2
-        assert get_inventory("ice").amount == Decimal("0")
+        assert get_inventory(USER_ID, "ice").amount == Decimal("0")
 
     def test_non_perishables_carry_when_day_ends_at_hour_24(self):
         game_service.start_game(USER_ID)
@@ -196,17 +220,17 @@ class TestContinueAndTick:
         assert session is not None
         assert session.phase == GamePhase.DAY_START
         assert session.day == 2
-        assert get_inventory("ice").amount == Decimal("0")
-        assert get_inventory("lemons").amount == Decimal("6")
-        assert get_inventory("cups").amount == Decimal("6")
+        assert get_inventory(USER_ID, "ice").amount == Decimal("0")
+        assert get_inventory(USER_ID, "lemons").amount == Decimal("6")
+        assert get_inventory(USER_ID, "cups").amount == Decimal("6")
 
     def test_bankruptcy_when_no_capital_and_cannot_make_lemonade(self):
         game_service.start_game(USER_ID)
         # Spend all capital on cups only — cannot make classic lemonade
         assert ingredients_service.buy(USER_ID, "cups", Decimal("375")) is True
         assert get_ledger(USER_ID).current_capital == Decimal("0")
-        assert get_inventory("cups").amount == Decimal("375")
-        assert not inventory_service.can_make_lemonade()
+        assert get_inventory(USER_ID, "cups").amount == Decimal("375")
+        assert not inventory_service.can_make_lemonade(USER_ID)
 
         game_service.continue_day(USER_ID)
         session = game_service.tick(USER_ID)
@@ -216,9 +240,9 @@ class TestContinueAndTick:
         game_service.start_game(USER_ID)
         assert ingredients_service.buy(USER_ID, "ice", Decimal("300")) is True
         assert get_ledger(USER_ID).current_capital == Decimal("0")
-        assert get_inventory("ice").amount == Decimal("300")
+        assert get_inventory(USER_ID, "ice").amount == Decimal("300")
 
         game_service.continue_day(USER_ID)
         session = game_service.tick(USER_ID)
         assert session.phase == GamePhase.GAME_OVER
-        assert get_inventory("ice").amount == Decimal("0")
+        assert get_inventory(USER_ID, "ice").amount == Decimal("0")
