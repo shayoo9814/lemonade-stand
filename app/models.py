@@ -80,14 +80,10 @@ class GeneralLedger(BaseModel):
 
 
 class User(BaseModel):
-    """A player who owns a lemonade stand and its general ledger."""
+    """A player who owns a lemonade stand."""
     id: str
     name: str
     email: str
-    general_ledger: list[GeneralLedger] = Field(
-        default_factory=list,
-        description="Append-only capital log owned by this player; empty until play begins",
-    )
 
 
 class Ingredient(BaseModel):

@@ -1,7 +1,8 @@
 """
 User application layer.
 
-Player lookups and syncing the append-only general ledger onto ``User``.
+Player lookups and opening-balance / ledger-clear helpers that delegate
+capital history to ``app.ledger`` (the sole source of truth).
 """
 
 from decimal import Decimal
@@ -36,24 +37,13 @@ def ensure_opening_balance(user_id: str) -> Optional[User]:
     if ledger_store.get_ledger(user_id) is not None:
         return user
     ledger_store.record_opening_balance(user_id=user_id, current_capital=SEED_CAPITAL)
-    return sync_ledger(user_id)
-
-
-def sync_ledger(user_id: str) -> Optional[User]:
-    """Copy the player's ledger log onto ``User.general_ledger`` and persist."""
-    user = db.get_user(user_id)
-    if user is None:
-        return None
-    entries = ledger_store.list_entries(user_id)
-    updated = user.model_copy(update={"general_ledger": entries})
-    db.set_user(updated)
-    return updated
+    return user
 
 
 def clear_ledger(user_id: str) -> Optional[User]:
-    """Wipe the player's ledger history and sync the empty log onto ``User``."""
+    """Wipe the player's ledger history in ``app.ledger``."""
     user = db.get_user(user_id)
     if user is None:
         return None
     ledger_store.clear_user(user_id)
-    return sync_ledger(user_id)
+    return user

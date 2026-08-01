@@ -68,11 +68,6 @@ class TestIngredientsService:
         assert latest.item_id == "ingredient-lemons"
         assert len(list_entries(USER_ID)) == 2
 
-        user = users_service.get(USER_ID)
-        assert user is not None
-        assert len(user.general_ledger) == 2
-        assert user.general_ledger[-1].current_capital == Decimal("24")
-
     def test_buy_uses_unit_price_from_bulk_catalog(self):
         ingredients_service.record_price(
             name="sugar",

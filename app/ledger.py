@@ -5,8 +5,8 @@ Per-player append-only logs of capital actions. Rows are never updated or
 deleted during play — only appended. Callers supply a user id plus a cost or
 revenue (and, for purchases/sales, the related catalog ``id``); this module
 never looks up ingredients or lemonades. Current balances for a player are
-always their latest entry. Persistence of the log onto
-``User.general_ledger`` is done by the users layer after successful writes.
+always their latest entry. This module is the sole source of truth for
+capital history.
 
 ``clear_all`` exists only for process/test bootstrap, not game operations.
 """

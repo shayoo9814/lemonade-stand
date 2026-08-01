@@ -94,7 +94,7 @@ def clear_user_ledger(current: CurrentUser) -> list[GeneralLedger]:
     user = users_service.clear_ledger(current.id)
     if user is None:
         raise HTTPException(status_code=404, detail="user not found")
-    return user.general_ledger
+    return ledger_store.list_entries(current.id)
 
 
 @router.post("/ingredients/buy", response_model=bool)

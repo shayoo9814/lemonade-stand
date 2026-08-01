@@ -13,7 +13,6 @@ from typing import Optional
 from app import database as db
 from app import inventory as inventory_service
 from app import ledger as ledger_store
-from app import users as users_service
 from app.models import Lemonade
 
 
@@ -58,7 +57,6 @@ def sell(user_id: str, name: str, amount: Decimal) -> bool:
     if not ledger_store.record_sale(user_id, revenue, lemonade.id):
         return False
 
-    users_service.sync_ledger(user_id)
     inventory_service.deduct(user_id, requirements)
     return True
 

@@ -11,7 +11,6 @@ from app import database as db
 from app import inventory as inventory_service
 from app import ledger as ledger_store
 from app import lemonades as lemonades_service
-from app import users as users_service
 from app.models import GamePhase, GameSession
 
 SEED_CAPITAL = Decimal("30.00")
@@ -73,7 +72,6 @@ def start_game(user_id: str) -> GameSession | None:
     ledger_store.record_opening_balance(
         user_id=user_id, current_capital=SEED_CAPITAL
     )
-    users_service.sync_ledger(user_id)
 
     session = GameSession(
         user_id=user_id,

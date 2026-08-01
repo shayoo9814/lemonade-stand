@@ -3,11 +3,10 @@ Thin in-memory persistence for the lemonade stand game.
 
 Stores entities and exposes get/set/list/clear helpers only. Business rules
 live in entity modules (``app.ingredients``, ``app.inventory``, etc.).
-Per-player general ledger logs are owned by ``app.ledger`` and mirrored onto
-``User.general_ledger``. Ingredient rows are an append-only price history
-(``append_ingredient`` only; no in-place updates). Inventory and lemonade
-menus are keyed by ``user_id``. ``clear_all`` / ``reset_db`` are
-process/test bootstrap only.
+Per-player general ledger logs are owned by ``app.ledger``. Ingredient rows
+are an append-only price history (``append_ingredient`` only; no in-place
+updates). Inventory and lemonade menus are keyed by ``user_id``.
+``clear_all`` / ``reset_db`` are process/test bootstrap only.
 """
 
 import json

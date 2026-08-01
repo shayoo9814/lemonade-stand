@@ -108,7 +108,6 @@ class TestBuyIngredients:
         assert latest.user_id == USER_ID
         assert latest.item_id == "ingredient-lemons"
         assert len(list_entries(USER_ID)) == 2
-        assert len(users_service.get(USER_ID).general_ledger) == 2
 
     def test_buy_uses_unit_price_from_bulk_catalog(self, client):
         # Catalog: $4.75 for 5 lb → $0.95/lb; buy 2 units
@@ -189,7 +188,6 @@ class TestSellLemonade:
         assert latest.amount == CLASSIC_PRICE
         assert latest.item_id == "lemonade-classic"
         assert len(list_entries(USER_ID)) == 2
-        assert users_service.get(USER_ID).general_ledger[-1].action == LedgerAction.SALE
 
     def test_sell_multiple_servings(self, client):
         _stock_classic(12)
@@ -354,7 +352,6 @@ class TestInventoryAndCapital:
         assert resp.json() == []
         assert client.get("/users/ledger", headers=AUTH).json() == []
         assert client.get("/users/capital", headers=AUTH).status_code == 404
-        assert users_service.get(USER_ID).general_ledger == []
 
     def test_list_ledger_empty_without_opening(self, client):
         from app.ledger import clear_all

@@ -67,9 +67,9 @@ is seeded, that player is used (so ``GET /auth/me`` can bootstrap the UI).
    * `GeneralLedger` rows are frozen (immutable); changes always produce a new entry.
    * Pure helpers (`apply_purchase` / `apply_sale`) compute the next row without
      mutating prior entries or module state; only successful results are appended.
-   * Buy/sell flows own domain rules (inventory stock, pricing), then call the ledger and sync onto
-     `User.general_ledger` so money math stays isolated, append-only, and easy
-     to unit-test without the rest of the stack.
+   * Buy/sell flows own domain rules (inventory stock, pricing), then call the ledger
+     so money math stays isolated, append-only, and easy to unit-test without the
+     rest of the stack.
 * **Auth stub for later swap-in.** 
    * There is no real login yet. 
    * Routes take `CurrentUser` via a FastAPI dependency that today resolves identity from
@@ -79,7 +79,7 @@ is seeded, that player is used (so ``GET /auth/me`` can bootstrap the UI).
 * **In-memory DB as a thin store.** 
    * `app/database` holds dict-backed entities with get/set/list only — no business rules. 
    * Ingredient prices are a shared append-only supermarket catalog; inventory and lemonade
-     menus are keyed by player; the ledger lives in its own module and is mirrored onto ``User``.
+     menus are keyed by player; capital history lives only in ``app.ledger``.
    * Seed data loads from JSON on import; `reset_db` clears everything for tests.
    * A real database can replace this layer without rewriting domain services.
 * **Ledger timestamps are wall-clock for now.**
@@ -98,7 +98,9 @@ is seeded, that player is used (so ``GET /auth/me`` can bootstrap the UI).
 5. Day ends when stock cannot cover a sale **or** hour reaches 24 → leftover **ice is discarded**, then back to `day_start` (or `game_over` if capital is empty and inventory cannot make a lemonade)
 
 ## Potential Extensions
-* Add proper multi-tenancy support
+* Create easy mode / medium mode / hard mode based on hourly demand 
+    * Create more accurate simulation of user behavior
+* Add proper multi-tenancy support (e.g. race conditions, deadlocks)
 * Add ability to add an item to the menu
 * Add proper auth layer with proper log-in page 
 * Add ability to stream live prices into db for fluctuating ingredient pricing 

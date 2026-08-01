@@ -15,7 +15,6 @@ from uuid import uuid4
 from app import database as db
 from app import inventory as inventory_service
 from app import ledger as ledger_store
-from app import users as users_service
 from app.models import Ingredient, IngredientUnit
 
 
@@ -85,6 +84,5 @@ def buy(user_id: str, ingredient_name: str, unit_count: Decimal) -> bool:
     if not ledger_store.record_purchase(user_id, cost, ingredient.id):
         return False
 
-    users_service.sync_ledger(user_id)
     inventory_service.add_stock(user_id, ingredient_name, unit_count)
     return True
