@@ -18,7 +18,7 @@ from app import inventory as inventory_service
 from app import lemonades as lemonades_service
 from app import ledger as ledger_store
 from app import users as users_service
-from app.models import GameSession, GeneralLedger, Ingredient, Inventory, User
+from app.models import GameSession, GeneralLedger, Ingredient, Inventory, Lemonade, User
 from app.requests import (
     BuyIngredientsRequest,
     SellLemonadeRequest,
@@ -101,6 +101,12 @@ def clear_user_ledger(current: CurrentUser) -> list[GeneralLedger]:
 def buy_ingredients(req: BuyIngredientsRequest, current: CurrentUser) -> bool:
     """Buy ingredient units for a player; updates inventory and their ledger."""
     return ingredients_service.buy(current.id, req.ingredient_name, req.unit_count)
+
+
+@router.get("/lemonades", response_model=list[Lemonade])
+def get_lemonades() -> list[Lemonade]:
+    """List menu items and their recipes."""
+    return lemonades_service.list_all()
 
 
 @router.post("/lemonades/sell", response_model=bool)

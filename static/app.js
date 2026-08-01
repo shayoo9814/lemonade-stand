@@ -3,6 +3,7 @@ const USER_ID_HEADER = "X-User-Id";
 
 const balanceEl = document.getElementById("balance");
 const inventoryListEl = document.getElementById("inventory-list");
+const menuListEl = document.getElementById("menu-list");
 const playerLineEl = document.getElementById("player-line");
 const phaseLineEl = document.getElementById("phase-line");
 const dayStartEl = document.getElementById("day-start");
@@ -17,6 +18,11 @@ let pollTimer = null;
 let catalog = [];
 /** Set from GET /auth/me; sent on later requests as X-User-Id. */
 let userId = null;
+
+function unitFor(ingredientName) {
+  const ing = catalog.find((item) => item.name === ingredientName);
+  return ing ? ing.unit : "";
+}
 
 function money(value) {
   const n = Number(value);
@@ -86,8 +92,38 @@ function renderInventory(items) {
     .sort((a, b) => a.ingredient_name.localeCompare(b.ingredient_name))
     .map(
       (item) =>
-        `<li><span>${item.ingredient_name}</span><span class="qty">${item.amount}</span></li>`
+        `<li><span>${item.ingredient_name}</span><span class="qty">${item.amount} ${item.unit}</span></li>`
     )
+    .join("");
+}
+
+function renderMenu(items) {
+  if (!items.length) {
+    menuListEl.innerHTML = "<li class='menu-empty'>No drinks on the menu</li>";
+    return;
+  }
+  menuListEl.innerHTML = items
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((drink) => {
+      const recipe = Object.entries(drink.recipe)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([name, amount]) => {
+          const unit = unitFor(name);
+          const qty = unit ? `${amount} ${unit}` : String(amount);
+          return `<li><span>${name}</span><span class="qty">${qty}</span></li>`;
+        })
+        .join("");
+      return `
+        <li class="menu-item">
+          <div class="menu-item-header">
+            <span class="menu-item-name">${drink.name}</span>
+            <span class="menu-item-price">${money(drink.price)}</span>
+          </div>
+          <p class="menu-recipe-label">Per serving</p>
+          <ul class="menu-recipe">${recipe}</ul>
+        </li>`;
+    })
     .join("");
 }
 
@@ -212,20 +248,23 @@ btnSetPrice.addEventListener("click", async () => {
       return;
     }
     showMessage(`Lemonade price set to ${money(priceInput.value)}`);
+    renderMenu(await api("/lemonades"));
   } catch (err) {
     showMessage(err.message, true);
   }
 });
 
 async function init() {
-  const [me, ingredients] = await Promise.all([
+  const [me, ingredients, menu] = await Promise.all([
     api("/auth/me"),
     api("/ingredients"),
+    api("/lemonades"),
   ]);
   userId = me.id;
   renderPlayer(me);
   catalog = ingredients;
   renderBuyRows(catalog);
+  renderMenu(menu);
   await refresh();
 }
 

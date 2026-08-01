@@ -22,6 +22,11 @@ def get(name: str) -> Optional[Lemonade]:
     return db.get_lemonade(name)
 
 
+def list_all() -> list[Lemonade]:
+    """Return every lemonade on the menu."""
+    return db.get_all_lemonades()
+
+
 def sell(user_id: str, name: str, amount: Decimal) -> bool:
     """Sell servings for a player; deduct inventory and credit revenue.
 

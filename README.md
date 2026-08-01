@@ -73,7 +73,7 @@ is seeded, that player is used (so ``GET /auth/me`` can bootstrap the UI).
    * There is no real login yet. 
    * Routes take `CurrentUser` via a FastAPI dependency that today resolves identity from
      ``X-User-Id`` (or the single seeded user). 
-   * Replacing `resolve_current_user_id()` / `get_current_user()` with session/JWT logic
+   * Replacing `resolve_current_user_id()` with session/JWT logic
      should not require rewriting route handlers.
 * **In-memory DB as a thin store.** 
    * `app/database` holds dict-backed entities with get/set/list only — no business rules. 
@@ -97,5 +97,7 @@ is seeded, that player is used (so ``GET /auth/me`` can bootstrap the UI).
 5. Day ends when stock cannot cover a sale **or** hour reaches 24 → leftover **ice is discarded**, then back to `day_start` (or `game_over` if capital is empty and inventory cannot make a lemonade)
 
 ## Potential Extensions
-* Add a search functionality on the ledger page ? 
-* 
+* Add ability to add an item to the menu
+* Add proper auth layer with proper log-in page 
+* Add ability to stream live prices into db for fluctuating ingredient pricing 
+* Add a search functionality on the ledger page 

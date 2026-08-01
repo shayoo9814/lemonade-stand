@@ -119,6 +119,7 @@ class Inventory(BaseModel):
     """On-hand stock for a single ingredient."""
     ingredient_name: str
     amount: Decimal = Field(ge=0)
+    unit: IngredientUnit
 
 
 class Lemonade(BaseModel):

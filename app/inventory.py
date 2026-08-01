@@ -7,7 +7,7 @@ Owns stock mutation rules. Persistence is delegated to ``app.database``.
 from decimal import Decimal
 
 from app import database as db
-from app.models import Inventory
+from app.models import IngredientUnit, Inventory
 
 # Ingredients that melt / spoil overnight and cannot carry to the next day.
 PERISHABLE_INGREDIENTS = frozenset({"ice"})
@@ -23,13 +23,27 @@ def list_all() -> list[Inventory]:
     return db.get_all_inventory()
 
 
+def _unit_for(ingredient_name: str, current: Inventory | None) -> IngredientUnit:
+    """Resolve the display unit from the catalog, or keep an existing entry's unit."""
+    ingredient = db.get_ingredient(ingredient_name)
+    if ingredient is not None:
+        return ingredient.unit
+    if current is not None:
+        return current.unit
+    raise ValueError(f"unknown ingredient: {ingredient_name}")
+
+
 def add_stock(ingredient_name: str, amount: Decimal) -> Inventory:
     """Increase on-hand stock and return the updated entry."""
     if amount <= 0:
         raise ValueError("amount to add must be positive")
     current = db.get_inventory(ingredient_name)
     on_hand = current.amount if current is not None else Decimal("0")
-    entry = Inventory(ingredient_name=ingredient_name, amount=on_hand + amount)
+    entry = Inventory(
+        ingredient_name=ingredient_name,
+        amount=on_hand + amount,
+        unit=_unit_for(ingredient_name, current),
+    )
     db.set_inventory(entry)
     return entry
 
@@ -54,6 +68,7 @@ def deduct(requirements: dict[str, Decimal]) -> bool:
             Inventory(
                 ingredient_name=entry.ingredient_name,
                 amount=entry.amount - required,
+                unit=entry.unit,
             )
         )
     return True
@@ -71,7 +86,11 @@ def discard_perishables() -> None:
         if entry is None:
             continue
         db.set_inventory(
-            Inventory(ingredient_name=entry.ingredient_name, amount=Decimal("0"))
+            Inventory(
+                ingredient_name=entry.ingredient_name,
+                amount=Decimal("0"),
+                unit=entry.unit,
+            )
         )
 
 

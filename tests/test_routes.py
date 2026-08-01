@@ -69,6 +69,23 @@ class TestListIngredients:
         assert by_name["ice"]["unit"] == "cup"
 
 
+class TestListLemonades:
+    def test_list_lemonades_includes_recipes(self, client):
+        resp = client.get("/lemonades")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 1
+        classic = data[0]
+        assert classic["name"] == "classic"
+        assert classic["price"] == "2.00"
+        assert classic["recipe"] == {
+            "lemons": "1",
+            "sugar": "0.05",
+            "cups": "1",
+            "ice": "1",
+        }
+
+
 class TestBuyIngredients:
     def test_buy_succeeds_and_updates_inventory_and_ledger(self, client):
         resp = client.post(
@@ -269,6 +286,16 @@ class TestInventoryAndCapital:
         resp = client.get("/inventory")
         assert resp.status_code == 200
         assert resp.json() == []
+
+    def test_list_inventory_includes_units(self, client):
+        _stock_classic(servings=2)
+        resp = client.get("/inventory")
+        assert resp.status_code == 200
+        by_name = {row["ingredient_name"]: row for row in resp.json()}
+        assert by_name["lemons"]["unit"] == "each"
+        assert by_name["sugar"]["unit"] == "lb"
+        assert by_name["cups"]["unit"] == "each"
+        assert by_name["ice"]["unit"] == "cup"
 
     def test_auth_me(self, client):
         resp = client.get("/auth/me", headers=AUTH)
