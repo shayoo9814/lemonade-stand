@@ -1,0 +1,52 @@
+{
+  "users": [
+    {
+      "id": "u1",
+      "name": "Sungho Yoo",
+      "email": "shayoo9814@gmail.com"
+    }
+  ],
+  "ingredients": [
+    {
+      "name": "lemons",
+      "amount": 1,
+      "price": "0.60",
+      "unit": "each",
+      "timestamp": "2026-08-01T00:00:00Z"
+    },
+    {
+      "name": "sugar",
+      "amount": 1,
+      "price": "0.95",
+      "unit": "lb",
+      "timestamp": "2026-08-01T00:00:00Z"
+    },
+    {
+      "name": "cups",
+      "amount": 1,
+      "price": "0.08",
+      "unit": "each",
+      "timestamp": "2026-08-01T00:00:00Z"
+    },
+    {
+      "name": "ice",
+      "amount": 1,
+      "price": "0.10",
+      "unit": "cup",
+      "timestamp": "2026-08-01T00:00:00Z"
+    }
+  ],
+  "inventory": [],
+  "lemonades": [
+    {
+      "name": "classic",
+      "price": "2.00",
+      "recipe": {
+        "lemons": "1",
+        "sugar": "0.05",
+        "cups": "1",
+        "ice": "1"
+      }
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Play · Lemonade Stand</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Figtree:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main class="stand">
+    <p class="nav-back"><a href="/">Rules</a></p>
+    <header class="brand">
+      <h1>Lemonade Stand</h1>
+      <p class="player" id="player-line" aria-live="polite">—</p>
+      <p class="meta" id="phase-line">No game yet</p>
+    </header>
+
+    <section class="balance" aria-live="polite">
+      <p class="label">Balance</p>
+      <p class="amount" id="balance">—</p>
+    </section>
+
+    <section class="inventory" aria-live="polite">
+      <h2>Inventory</h2>
+      <ul id="inventory-list"></ul>
+    </section>
+
+    <section class="actions" id="actions">
+      <button type="button" id="btn-start">Start game</button>
+      <div id="day-start" class="day-start hidden">
+        <p class="hint">Buy ingredients, then open for the day.</p>
+        <div id="buy-rows"></div>
+        <label class="price-row">
+          Lemonade price
+          <input type="number" id="lemonade-price" min="0" step="0.01" value="2.00" />
+          <button type="button" id="btn-set-price">Set</button>
+        </label>
+        <button type="button" id="btn-continue" class="primary">Open for the day</button>
+      </div>
+      <p id="message" class="message" hidden></p>
+    </section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>
