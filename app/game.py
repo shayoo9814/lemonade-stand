@@ -15,7 +15,7 @@ from app.models import GamePhase, GameSession
 
 SEED_CAPITAL = Decimal("30.00")
 SECONDS_PER_GAME_HOUR = 1
-HOURS_PER_DAY = 24
+HOURS_PER_DAY = 1
 HOURLY_DEMAND = Decimal("1")
 DEFAULT_LEMONADE = "classic"
 

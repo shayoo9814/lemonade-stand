@@ -98,10 +98,20 @@ is seeded, that player is used (so ``GET /auth/me`` can bootstrap the UI).
 5. Day ends when stock cannot cover a sale **or** hour reaches 24 → leftover **ice is discarded**, then back to `day_start` (or `game_over` if capital is empty and inventory cannot make a lemonade)
 
 ## Potential Extensions
-* Create easy mode / medium mode / hard mode based on hourly demand 
-    * Create more accurate simulation of user behavior
-* Add proper multi-tenancy support (e.g. race conditions, deadlocks)
-* Add ability to add an item to the menu
-* Add proper auth layer with proper log-in page 
-* Add ability to stream live prices into db for fluctuating ingredient pricing 
-* Add a search functionality on the ledger page 
+
+### Product
+* Easy / medium / hard mode based on hourly demand
+* More accurate simulation of customer behavior
+* Ability to add an item to the menu
+* Login page for players
+* Fluctuating ingredient pricing 
+* Search on the ledger page
+
+### Technical
+* Prevent decimal amounts for the items.
+* Proper multi-tenancy support (e.g. race conditions, deadlocks)
+* Auth layer backing the login page
+* Stream live prices into the DB for ingredient pricing
+* Swap the in-memory store for a real DB
+* Persist game sessions
+* Make the tick loop restart-safe / multi-worker safe
