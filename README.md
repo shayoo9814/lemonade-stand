@@ -54,6 +54,7 @@ is seeded, that player is used (so ``GET /auth/me`` can bootstrap the UI).
 | DELETE | /users/ledger | Wipe the current user's general ledger |
 | POST | /users/opening-balance | Create opening balance if missing (idempotent) |
 | POST | /ingredients/buy | Buy ingredients (day-start only when a game is active) |
+| GET | /lemonades | List lemonades on the menu (id, name, price, recipe) |
 | POST | /lemonades/sell | Sell lemonade servings (stock + revenue) |
 | POST | /lemonades/price | Set lemonade sell price (day-start only when a game is active) |
 | POST | /game/start | Start a game ($30 seed capital, empty inventory) |
