@@ -87,28 +87,21 @@ class User(BaseModel):
 
 
 class Ingredient(BaseModel):
-    """A buyable ingredient catalog entry with bulk pricing.
+    """A buyable ingredient catalog entry with a per-unit price.
 
-    ``price`` is the cost for ``amount`` units (e.g. $4.75 for a 5 lb bag).
-    Unit cost is ``price / amount``. Rows are append-only and immutable: a
-    new ``timestamp`` records a price (or pack-size) change over time.
+    ``unit_price`` is the cost of one ``unit`` (e.g. $0.60 per lemon). Rows are
+    append-only and immutable: a new ``timestamp`` records a price change.
     """
     model_config = ConfigDict(frozen=True)
 
     id: str
     name: str
-    amount: Decimal = Field(gt=0, description="Quantity covered by the listed price")
-    price: Decimal = Field(gt=0)
+    unit_price: Decimal = Field(gt=0, description="Cost per single unit")
     unit: IngredientUnit
     timestamp: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="When this price became effective",
     )
-
-    @property
-    def unit_price(self) -> Decimal:
-        """Cost per single unit of this ingredient."""
-        return self.price / self.amount
 
 
 class Inventory(BaseModel):

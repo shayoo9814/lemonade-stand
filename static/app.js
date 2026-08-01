@@ -130,7 +130,7 @@ function renderMenu(items) {
 function renderBuyRows(ingredients) {
   buyRowsEl.innerHTML = ingredients
     .map((ing) => {
-      const unit = Number(ing.price) / Number(ing.amount);
+      const unit = Number(ing.unit_price);
       return `
         <div class="buy-row" data-name="${ing.name}">
           <span>${ing.name} <small>($${unit.toFixed(2)}/${ing.unit})</small></span>

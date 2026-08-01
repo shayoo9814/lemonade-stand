@@ -18,69 +18,32 @@ def _catalog() -> dict[str, Ingredient]:
         "lemons": Ingredient(
             id="ingredient-lemons",
             name="lemons",
-            amount=Decimal("1"),
-            price=Decimal("0.60"),
+            unit_price=Decimal("0.60"),
             unit=IngredientUnit.EACH,
             timestamp=SEED_TS,
         ),
         "sugar": Ingredient(
             id="ingredient-sugar",
             name="sugar",
-            amount=Decimal("1"),
-            price=Decimal("0.95"),
+            unit_price=Decimal("0.95"),
             unit=IngredientUnit.LB,
             timestamp=SEED_TS,
         ),
         "cups": Ingredient(
             id="ingredient-cups",
             name="cups",
-            amount=Decimal("1"),
-            price=Decimal("0.08"),
+            unit_price=Decimal("0.08"),
             unit=IngredientUnit.EACH,
             timestamp=SEED_TS,
         ),
         "ice": Ingredient(
             id="ingredient-ice",
             name="ice",
-            amount=Decimal("1"),
-            price=Decimal("0.10"),
+            unit_price=Decimal("0.10"),
             unit=IngredientUnit.CUP,
             timestamp=SEED_TS,
         ),
     }
-
-
-class TestIngredientBulkPricing:
-    def test_unit_price_divides_bulk_pack(self):
-        sugar = Ingredient(
-            id="ingredient-sugar",
-            name="sugar",
-            amount=Decimal("5"),
-            price=Decimal("4.75"),
-            unit=IngredientUnit.LB,
-            timestamp=SEED_TS,
-        )
-        assert sugar.unit_price == Decimal("0.95")
-
-    def test_recipe_cost_uses_unit_price(self):
-        catalog = {
-            "sugar": Ingredient(
-                id="ingredient-sugar",
-                name="sugar",
-                amount=Decimal("5"),
-                price=Decimal("4.75"),
-                unit=IngredientUnit.LB,
-                timestamp=SEED_TS,
-            ),
-        }
-        lemonade = Lemonade(
-            id="lemonade-sweet",
-            name="sweet",
-            price=Decimal("2.00"),
-            recipe={"sugar": Decimal("0.05")},
-        )
-        # 0.05 lb * ($4.75 / 5 lb) = 0.0475
-        assert lemonade.recipe_cost(catalog) == Decimal("0.0475")
 
 
 class TestLemonadeRecipe:

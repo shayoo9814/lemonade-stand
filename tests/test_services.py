@@ -68,16 +68,15 @@ class TestIngredientsService:
         assert latest.item_id == "ingredient-lemons"
         assert len(list_entries(USER_ID)) == 2
 
-    def test_buy_uses_unit_price_from_bulk_catalog(self):
+    def test_buy_uses_latest_catalog_price(self):
         ingredients_service.record_price(
             name="sugar",
-            amount=Decimal("5"),
-            price=Decimal("4.75"),
+            unit_price=Decimal("0.95"),
             unit=IngredientUnit.LB,
             timestamp=LATER_TS,
         )
         assert ingredients_service.buy(USER_ID, "sugar", unit_count=Decimal("2")) is True
-        # 2 units × ($4.75 / 5) = $1.90; inventory +2
+        # 2 units × $0.95 = $1.90; inventory +2
         assert inventory_service.get(USER_ID, "sugar").amount == Decimal("2")
         assert get_ledger(USER_ID).current_capital == Decimal("28.10")
 
@@ -90,13 +89,12 @@ class TestIngredientsService:
     def test_record_price_appends_history(self):
         ingredients_service.record_price(
             name="lemons",
-            amount=Decimal("1"),
-            price=Decimal("0.75"),
+            unit_price=Decimal("0.75"),
             unit=IngredientUnit.EACH,
             timestamp=LATER_TS,
         )
         history = get_ingredient_history("lemons")
         assert len(history) == 2
-        assert history[0].price == Decimal("0.60")
-        assert history[1].price == Decimal("0.75")
-        assert ingredients_service.get("lemons").price == Decimal("0.75")
+        assert history[0].unit_price == Decimal("0.60")
+        assert history[1].unit_price == Decimal("0.75")
+        assert ingredients_service.get("lemons").unit_price == Decimal("0.75")

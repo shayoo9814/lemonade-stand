@@ -10,32 +10,28 @@
     {
       "id": "ingredient-lemons",
       "name": "lemons",
-      "amount": 1,
-      "price": "0.60",
+      "unit_price": "0.60",
       "unit": "each",
       "timestamp": "2026-08-01T00:00:00Z"
     },
     {
       "id": "ingredient-sugar",
       "name": "sugar",
-      "amount": 1,
-      "price": "0.95",
+      "unit_price": "0.95",
       "unit": "lb",
       "timestamp": "2026-08-01T00:00:00Z"
     },
     {
       "id": "ingredient-cups",
       "name": "cups",
-      "amount": 1,
-      "price": "0.08",
+      "unit_price": "0.08",
       "unit": "each",
       "timestamp": "2026-08-01T00:00:00Z"
     },
     {
       "id": "ingredient-ice",
       "name": "ice",
-      "amount": 1,
-      "price": "0.10",
+      "unit_price": "0.10",
       "unit": "cup",
       "timestamp": "2026-08-01T00:00:00Z"
     }

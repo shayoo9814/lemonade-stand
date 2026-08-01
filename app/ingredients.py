@@ -30,18 +30,16 @@ def list_all() -> list[Ingredient]:
 
 def record_price(
     name: str,
-    amount: Decimal,
-    price: Decimal,
+    unit_price: Decimal,
     unit: IngredientUnit,
     timestamp: Optional[datetime] = None,
     id: Optional[str] = None,
 ) -> Ingredient:
-    """Append a new price version for an ingredient (append-only history)."""
+    """Append a new per-unit price version for an ingredient (append-only)."""
     kwargs: dict = {
         "id": id or str(uuid4()),
         "name": name,
-        "amount": amount,
-        "price": price,
+        "unit_price": unit_price,
         "unit": unit,
     }
     if timestamp is not None:
@@ -54,10 +52,10 @@ def record_price(
 def buy(user_id: str, ingredient_name: str, unit_count: Decimal) -> bool:
     """Purchase ingredient units for a player if capital allows.
 
-    ``unit_count`` is the number of units to buy. Cost is always
-    ``ingredient.unit_price × unit_count`` (derived from bulk catalog pricing).
-    On success, adds ``unit_count`` units to inventory and records the purchase
-    on the player's general ledger (``item_id`` = ``Ingredient.id``).
+    ``unit_count`` is the number of units to buy. Cost is
+    ``ingredient.unit_price × unit_count``. On success, adds ``unit_count`` units
+    to inventory and records the purchase on the player's general ledger
+    (``item_id`` = ``Ingredient.id``).
 
     When a game session exists, purchases are only allowed during ``DAY_START``.
 

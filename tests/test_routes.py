@@ -60,7 +60,7 @@ class TestListIngredients:
         by_name = {item["name"]: item for item in data}
         assert set(by_name) == {"lemons", "sugar", "cups", "ice"}
         assert by_name["lemons"]["unit"] == "each"
-        assert by_name["lemons"]["amount"] == "1"
+        assert by_name["lemons"]["unit_price"] == "0.60"
         assert by_name["lemons"]["id"] == "ingredient-lemons"
         assert by_name["lemons"]["timestamp"] == "2026-08-01T00:00:00Z"
         assert by_name["sugar"]["unit"] == "lb"
@@ -109,12 +109,10 @@ class TestBuyIngredients:
         assert latest.item_id == "ingredient-lemons"
         assert len(list_entries(USER_ID)) == 2
 
-    def test_buy_uses_unit_price_from_bulk_catalog(self, client):
-        # Catalog: $4.75 for 5 lb → $0.95/lb; buy 2 units
+    def test_buy_uses_latest_catalog_price(self, client):
         ingredients_service.record_price(
             name="sugar",
-            amount=Decimal("5"),
-            price=Decimal("4.75"),
+            unit_price=Decimal("0.95"),
             unit=IngredientUnit.LB,
             timestamp=LATER_TS,
         )
@@ -129,7 +127,7 @@ class TestBuyIngredients:
         assert get_inventory(USER_ID, "sugar").amount == 2
         assert get_ledger(USER_ID).current_capital == Decimal("28.10")
         assert get_ledger(USER_ID).expenses_incurred == Decimal("1.90")
-        assert get_ingredient("sugar").amount == Decimal("5")
+        assert get_ingredient("sugar").unit_price == Decimal("0.95")
         assert get_ingredient("sugar").timestamp == LATER_TS
 
     def test_buy_unknown_ingredient_fails(self, client):
