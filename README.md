@@ -109,7 +109,7 @@ is seeded, that player is used (so ``GET /auth/me`` can bootstrap the UI).
 
 ### Technical
 * Prevent decimal amounts for the items.
-* Proper multi-player support for db access (e.g. race conditions, deadlocks)
+* Proper multi-player support for db READ/WRITE (e.g. race conditions, deadlocks)
 * Auth layer backing the login page
 * Stream live prices into the DB for ingredient pricing
 * Swap the in-memory store for a real DB
