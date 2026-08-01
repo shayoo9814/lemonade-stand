@@ -233,23 +233,6 @@ button.primary:hover:not(:disabled) {
   color: #9b2c2c;
 }
 
-.nav-back {
-  margin: 0;
-  font-size: 0.9rem;
-}
-
-.nav-back a {
-  color: var(--muted);
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: color 0.15s ease, border-color 0.15s ease;
-}
-
-.nav-back a:hover {
-  color: var(--ink);
-  border-bottom-color: var(--ink);
-}
-
 /* --- Landing / rules --- */
 
 body.landing {
@@ -399,4 +382,133 @@ body.landing {
   .intro {
     padding-top: 12vh;
   }
+}
+
+/* --- Nav / ledger --- */
+
+.nav-links {
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+}
+
+.nav-links a {
+  color: var(--muted);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.nav-links a:hover {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+
+.ledger-page {
+  width: min(44rem, calc(100% - 2rem));
+}
+
+.balance .verify {
+  margin: 0.45rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ok);
+}
+
+.balance .verify.mismatch {
+  color: #9b2c2c;
+}
+
+.ledger h2 {
+  margin: 0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.ledger-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.6rem;
+}
+
+.ledger-heading button {
+  padding: 0.45rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.ledger-table-wrap {
+  overflow-x: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  animation: rise 0.55s ease-out 0.08s both;
+}
+
+.ledger-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.92rem;
+}
+
+.ledger-table th,
+.ledger-table td {
+  padding: 0.65rem 0.85rem;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.ledger-table th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.ledger-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ledger-table td.num {
+  text-align: right;
+  font-weight: 600;
+}
+
+.ledger-table th:nth-child(n + 4) {
+  text-align: right;
+}
+
+.ledger-table .item-id {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-variant-numeric: normal;
+}
+
+.ledger-table .outflow {
+  color: #9b2c2c;
+}
+
+.ledger-table .inflow {
+  color: var(--ok);
+}
+
+.ledger-table tr.latest {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.ledger-table tr.latest td:nth-child(5) {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.05rem;
+}
+
+.ledger-table .empty {
+  text-align: center;
+  color: var(--muted);
+  font-weight: 400;
+  white-space: normal;
 }

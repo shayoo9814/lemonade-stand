@@ -62,6 +62,12 @@ def play():
     return FileResponse(STATIC_DIR / "play.html")
 
 
+@app.get("/ledger")
+def ledger():
+    """Serve the general ledger UI."""
+    return FileResponse(STATIC_DIR / "ledger.html")
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}

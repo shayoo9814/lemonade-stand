@@ -18,7 +18,7 @@ from app import inventory as inventory_service
 from app import lemonades as lemonades_service
 from app import ledger as ledger_store
 from app import users as users_service
-from app.models import GameSession, Ingredient, Inventory, User
+from app.models import GameSession, GeneralLedger, Ingredient, Inventory, User
 from app.requests import (
     BuyIngredientsRequest,
     SellLemonadeRequest,
@@ -82,6 +82,21 @@ def get_capital(current: CurrentUser) -> CapitalResponse:
     return CapitalResponse(user_id=current.id, current_capital=latest.current_capital)
 
 
+@router.get("/users/ledger", response_model=list[GeneralLedger])
+def list_user_ledger(current: CurrentUser) -> list[GeneralLedger]:
+    """Return the player's append-only general ledger (oldest first)."""
+    return ledger_store.list_entries(current.id)
+
+
+@router.delete("/users/ledger", response_model=list[GeneralLedger])
+def clear_user_ledger(current: CurrentUser) -> list[GeneralLedger]:
+    """Wipe the player's general ledger history."""
+    user = users_service.clear_ledger(current.id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="user not found")
+    return user.general_ledger
+
+
 @router.post("/ingredients/buy", response_model=bool)
 def buy_ingredients(req: BuyIngredientsRequest, current: CurrentUser) -> bool:
     """Buy ingredient units for a player; updates inventory and their ledger."""
@@ -90,7 +105,7 @@ def buy_ingredients(req: BuyIngredientsRequest, current: CurrentUser) -> bool:
 
 @router.post("/lemonades/sell", response_model=bool)
 def sell_lemonade(req: SellLemonadeRequest, current: CurrentUser) -> bool:
-    """Sell lemonade servings for a player; deducts inventory and credits their ledger."""
+    """Sell lemonade servings for a player; deducts inventory and credits sale revenue."""
     return lemonades_service.sell(current.id, req.name, req.amount)
 
 

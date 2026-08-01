@@ -17,9 +17,8 @@ from app.ledger import get_ledger, list_entries
 from app.main import app
 from app.models import IngredientUnit, LedgerAction
 
-# classic recipe cost: 0.60 + 0.05*0.95 + 0.08 + 0.10 = 0.8275
-# classic price: 2.00 → profit: 1.1725
-CLASSIC_PROFIT = Decimal("1.1725")
+# classic seed price: $2.00 per serving (sale revenue; costs are on purchase rows)
+CLASSIC_PRICE = Decimal("2.00")
 LATER_TS = datetime(2026, 8, 15, tzinfo=timezone.utc)
 USER_ID = "u1"
 AUTH = {USER_ID_HEADER: USER_ID}
@@ -62,8 +61,10 @@ class TestListIngredients:
         assert set(by_name) == {"lemons", "sugar", "cups", "ice"}
         assert by_name["lemons"]["unit"] == "each"
         assert by_name["lemons"]["amount"] == "1"
+        assert by_name["lemons"]["id"] == "ingredient-lemons"
         assert by_name["lemons"]["timestamp"] == "2026-08-01T00:00:00Z"
         assert by_name["sugar"]["unit"] == "lb"
+        assert by_name["sugar"]["id"] == "ingredient-sugar"
         assert by_name["cups"]["unit"] == "each"
         assert by_name["ice"]["unit"] == "cup"
 
@@ -88,6 +89,7 @@ class TestBuyIngredients:
         assert latest.expenses_incurred == 6
         assert latest.action == LedgerAction.PURCHASE
         assert latest.user_id == USER_ID
+        assert latest.item_id == "ingredient-lemons"
         assert len(list_entries(USER_ID)) == 2
         assert len(users_service.get(USER_ID).general_ledger) == 2
 
@@ -163,10 +165,12 @@ class TestSellLemonade:
 
         latest = get_ledger(USER_ID)
         assert latest is not None
-        assert latest.current_capital == Decimal("30") + CLASSIC_PROFIT
+        assert latest.current_capital == Decimal("30") + CLASSIC_PRICE
         assert latest.expenses_incurred == 0
         assert latest.action == LedgerAction.SALE
         assert latest.user_id == USER_ID
+        assert latest.amount == CLASSIC_PRICE
+        assert latest.item_id == "lemonade-classic"
         assert len(list_entries(USER_ID)) == 2
         assert users_service.get(USER_ID).general_ledger[-1].action == LedgerAction.SALE
 
@@ -184,8 +188,8 @@ class TestSellLemonade:
         assert get_inventory("sugar").amount == Decimal("0.85")
         assert get_inventory("cups").amount == 9
         assert get_inventory("ice").amount == 9
-        assert get_ledger(USER_ID).current_capital == Decimal("30") + CLASSIC_PROFIT * 3
-        assert get_ledger(USER_ID).amount == CLASSIC_PROFIT * 3
+        assert get_ledger(USER_ID).current_capital == Decimal("30") + CLASSIC_PRICE * 3
+        assert get_ledger(USER_ID).amount == CLASSIC_PRICE * 3
         assert len(list_entries(USER_ID)) == 2
 
     def test_sell_unknown_lemonade_fails(self, client):
@@ -215,7 +219,7 @@ class TestSellLemonade:
         assert resp.status_code == 200
         assert resp.json() is False
         assert get_inventory("lemons").amount == 0
-        assert get_ledger(USER_ID).current_capital == Decimal("30") + CLASSIC_PROFIT * 12
+        assert get_ledger(USER_ID).current_capital == Decimal("30") + CLASSIC_PRICE * 12
         # opening + one bulk sale
         assert len(list_entries(USER_ID)) == 2
 
@@ -285,6 +289,54 @@ class TestInventoryAndCapital:
         assert resp.status_code == 200
         assert resp.json() == {"user_id": USER_ID, "current_capital": "30.00"}
 
+    def test_list_ledger(self, client):
+        resp = client.get("/users/ledger", headers=AUTH)
+        assert resp.status_code == 200
+        entries = resp.json()
+        assert len(entries) == 1
+        assert entries[0]["user_id"] == USER_ID
+        assert entries[0]["action"] == "opening_balance"
+        assert entries[0]["amount"] == "30.00"
+        assert entries[0]["current_capital"] == "30.00"
+        assert entries[0]["expenses_incurred"] == "0"
+        assert entries[0]["item_id"] == "opening-balance"
+
+        client.post(
+            "/ingredients/buy",
+            headers=AUTH,
+            json={"ingredient_name": "lemons", "unit_count": "1"},
+        )
+        entries = client.get("/users/ledger", headers=AUTH).json()
+        assert len(entries) == 2
+        assert entries[1]["action"] == "purchase"
+        assert entries[1]["amount"] == "0.60"
+        assert entries[1]["current_capital"] == "29.40"
+        assert entries[1]["expenses_incurred"] == "0.60"
+        assert entries[1]["item_id"] == "ingredient-lemons"
+
+    def test_clear_ledger(self, client):
+        client.post(
+            "/ingredients/buy",
+            headers=AUTH,
+            json={"ingredient_name": "lemons", "unit_count": "1"},
+        )
+        assert len(client.get("/users/ledger", headers=AUTH).json()) == 2
+
+        resp = client.delete("/users/ledger", headers=AUTH)
+        assert resp.status_code == 200
+        assert resp.json() == []
+        assert client.get("/users/ledger", headers=AUTH).json() == []
+        assert client.get("/users/capital", headers=AUTH).status_code == 404
+        assert users_service.get(USER_ID).general_ledger == []
+
+    def test_list_ledger_empty_without_opening(self, client):
+        from app.ledger import clear_all
+
+        clear_all()
+        resp = client.get("/users/ledger", headers=AUTH)
+        assert resp.status_code == 200
+        assert resp.json() == []
+
     def test_get_capital_without_ledger(self, client):
         from app.ledger import clear_all
 
@@ -324,3 +376,12 @@ class TestInventoryAndCapital:
         assert resp.status_code == 200
         assert "Lemonade Stand" in resp.text
         assert 'id="player-line"' in resp.text
+        assert 'href="/ledger"' in resp.text
+
+    def test_ui_ledger(self, client):
+        resp = client.get("/ledger")
+        assert resp.status_code == 200
+        assert "General ledger" in resp.text
+        assert 'id="ledger-body"' in resp.text
+        assert 'id="btn-clear-ledger"' in resp.text
+        assert 'href="/play"' in resp.text

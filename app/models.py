@@ -20,6 +20,13 @@ class LedgerAction(str, Enum):
     OPENING_BALANCE = "opening_balance"
     PURCHASE = "purchase"
     SALE = "sale"
+    RESET_LEDGER = "reset-ledger"
+
+
+# Sentinel ``item_id`` for opening-balance rows (no catalog item).
+OPENING_BALANCE_ITEM_ID = "opening-balance"
+# Sentinel ``item_id`` for game-reset rows that zero capital.
+RESET_LEDGER_ITEM_ID = "reset-ledger"
 
 
 class GamePhase(str, Enum):
@@ -44,6 +51,12 @@ class GeneralLedger(BaseModel):
     as a flat table. Running balances after the action are stored on the
     row; the player's current position is their latest entry. Rows are
     immutable once written.
+
+    ``item_id`` always references a related item:
+    - purchase → ``Ingredient.id``
+    - sale → ``Lemonade.id``
+    - opening balance → ``OPENING_BALANCE_ITEM_ID``
+    - reset-ledger (game reset) → ``RESET_LEDGER_ITEM_ID``
     """
     model_config = ConfigDict(frozen=True)
 
@@ -51,10 +64,19 @@ class GeneralLedger(BaseModel):
     timestamp: datetime
     action: LedgerAction
     amount: Decimal = Field(
-        description="Magnitude of the action (opening capital, purchase cost, or sale profit)",
+        description=(
+            "Magnitude of the action (opening capital credited, purchase cost, "
+            "sale revenue, or capital cleared on reset)"
+        ),
     )
     current_capital: Decimal
     expenses_incurred: Decimal = Decimal("0")
+    item_id: str = Field(
+        description=(
+            "Related Ingredient.id (purchase), Lemonade.id (sale), "
+            "OPENING_BALANCE_ITEM_ID (opening balance), or RESET_LEDGER_ITEM_ID (game reset)"
+        ),
+    )
 
 
 class User(BaseModel):
@@ -77,6 +99,7 @@ class Ingredient(BaseModel):
     """
     model_config = ConfigDict(frozen=True)
 
+    id: str
     name: str
     amount: Decimal = Field(gt=0, description="Quantity covered by the listed price")
     price: Decimal = Field(gt=0)
@@ -100,6 +123,7 @@ class Inventory(BaseModel):
 
 class Lemonade(BaseModel):
     """A drink recipe: sell price should cover the cost of required ingredients."""
+    id: str
     name: str
     price: Decimal = Field(ge=0)
     recipe: dict[str, Decimal] = Field(

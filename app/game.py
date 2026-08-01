@@ -15,7 +15,7 @@ from app import users as users_service
 from app.models import GamePhase, GameSession
 
 SEED_CAPITAL = Decimal("30.00")
-SECONDS_PER_GAME_HOUR = 3
+SECONDS_PER_GAME_HOUR = 1
 HOURS_PER_DAY = 24
 HOURLY_DEMAND = Decimal("1")
 DEFAULT_LEMONADE = "classic"
@@ -57,8 +57,10 @@ def is_bankrupt(user_id: str) -> bool:
 def start_game(user_id: str) -> GameSession | None:
     """Start a fresh game for ``user_id`` with seed capital and empty stock.
 
-    Resets that player's ledger to ``SEED_CAPITAL``, clears shared inventory,
-    and enters ``DAY_START``. Only one active game is kept at a time.
+    Clears any existing capital with a reset-ledger row (subtracts the
+    current balance to zero), then appends an opening-balance row for
+    ``SEED_CAPITAL``. History is retained. Clears shared inventory and
+    enters ``DAY_START``. Only one active game is kept at a time.
     Returns None if the user is unknown.
     """
     if db.get_user(user_id) is None:
@@ -66,7 +68,10 @@ def start_game(user_id: str) -> GameSession | None:
 
     _sessions.clear()
     inventory_service.clear_all()
-    ledger_store.record_opening_balance(user_id=user_id, current_capital=SEED_CAPITAL)
+    ledger_store.record_reset_ledger(user_id=user_id)
+    ledger_store.record_opening_balance(
+        user_id=user_id, current_capital=SEED_CAPITAL
+    )
     users_service.sync_ledger(user_id)
 
     session = GameSession(

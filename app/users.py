@@ -27,8 +27,8 @@ def list_all() -> list[User]:
 def ensure_opening_balance(user_id: str) -> Optional[User]:
     """Create a seed opening-balance entry if the player has no ledger yet.
 
-    Idempotent: existing ledgers are left unchanged. Used when the UI loads
-    so capital exists before the player starts a game session.
+    Idempotent: existing ledgers are left unchanged. Available for API/tests;
+    the play UI waits for ``POST /game/start``, which seeds capital itself.
     """
     user = db.get_user(user_id)
     if user is None:
@@ -45,8 +45,15 @@ def sync_ledger(user_id: str) -> Optional[User]:
     if user is None:
         return None
     entries = ledger_store.list_entries(user_id)
-    if not entries:
-        return user
     updated = user.model_copy(update={"general_ledger": entries})
     db.set_user(updated)
     return updated
+
+
+def clear_ledger(user_id: str) -> Optional[User]:
+    """Wipe the player's ledger history and sync the empty log onto ``User``."""
+    user = db.get_user(user_id)
+    if user is None:
+        return None
+    ledger_store.clear_user(user_id)
+    return sync_ledger(user_id)

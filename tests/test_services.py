@@ -56,6 +56,7 @@ class TestIngredientsService:
         assert latest.expenses_incurred == Decimal("6")
         assert latest.action == LedgerAction.PURCHASE
         assert latest.user_id == USER_ID
+        assert latest.item_id == "ingredient-lemons"
         assert len(list_entries(USER_ID)) == 2
 
         user = users_service.get(USER_ID)

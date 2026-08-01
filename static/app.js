@@ -141,12 +141,12 @@ function renderPlayer(user) {
 
 async function refresh() {
   const [capital, inventory, session] = await Promise.all([
-    api("/users/capital"),
+    api("/users/capital").catch(() => null),
     api("/inventory"),
     api("/game"),
   ]);
 
-  balanceEl.textContent = money(capital.current_capital);
+  balanceEl.textContent = capital ? money(capital.current_capital) : "—";
   renderInventory(inventory);
   phaseLineEl.textContent = phaseLabel(session);
 
@@ -226,7 +226,6 @@ async function init() {
   renderPlayer(me);
   catalog = ingredients;
   renderBuyRows(catalog);
-  await api("/users/opening-balance", { method: "POST" });
   await refresh();
 }
 

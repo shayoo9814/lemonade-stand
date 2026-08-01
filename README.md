@@ -22,7 +22,7 @@ Or:
 python -m uvicorn app.main:app --reload
 ```
 
-Open **http://127.0.0.1:8000/** for the rules page; **http://127.0.0.1:8000/play** for the game UI.
+Open **http://127.0.0.1:8000/** for the rules page; **http://127.0.0.1:8000/play** for the game UI; **http://127.0.0.1:8000/ledger** for the general ledger.
 API docs remain at `/docs`.
 
 ## Running tests
@@ -33,7 +33,7 @@ pytest -v
 
 ## Assumptions
 * There's an infinite supply of ingredients (i.e. the supermarket doesn't run out of ingredients)
-* 1 hour in the game takes 3 seconds in real life to pass
+* 1 hour in the game takes 1 second in real life to pass
 * Lemonade creation is as fast as the computer can perform the necessary logic 
 * Lemons are not perishable
 
@@ -50,44 +50,52 @@ is seeded, that player is used (so ``GET /auth/me`` can bootstrap the UI).
 | GET | /ingredients | List stand ingredients and stock |
 | GET | /inventory | On-hand inventory stock |
 | GET | /users/capital | Current user's capital |
+| GET | /users/ledger | Current user's general ledger entries |
+| DELETE | /users/ledger | Wipe the current user's general ledger |
 | POST | /users/opening-balance | Create opening balance if missing (idempotent) |
 | POST | /ingredients/buy | Buy ingredients (day-start only when a game is active) |
-| POST | /lemonades/sell | Sell lemonade servings (stock + profit) |
+| POST | /lemonades/sell | Sell lemonade servings (stock + revenue) |
 | POST | /lemonades/price | Set lemonade sell price (day-start only when a game is active) |
 | POST | /game/start | Start a game ($30 seed capital, empty inventory) |
 | GET | /game | Current game session (day, hour, phase) |
 | POST | /game/continue | Leave day-start prep and start the intra-day clock |
 
-## Auth (stub)
-
-There is no login yet. Identity is resolved in `app/auth.py` so a real auth
-layer can plug in later without rewriting routes.
-
-**How identity is resolved**
-
-1. Player-scoped handlers take `current: CurrentUser`.
-2. `CurrentUser` is a FastAPI dependency (`Depends(get_current_user)`).
-3. `get_current_user()` reads the ``X-User-Id`` header and calls
-   `resolve_current_user_id()`.
-4. If the header is set, that id is used (unknown id → `401`). If it is
-   omitted and exactly one user is seeded, that player is treated as signed
-   in; otherwise the request is `401`.
-5. The user record is loaded; routes use `current.id` (no `user_id` in the
-   path or body).
-
-The UI calls ``GET /auth/me`` once (header optional), then sends
-``X-User-Id`` on subsequent requests.
-
-**Extending later**
-
-Replace `resolve_current_user_id()` / `get_current_user()` to derive the user
-from a session cookie, Bearer JWT, or similar instead of ``X-User-Id``. Keep
-`CurrentUser` as the stable surface used by routes.
+## Things to keep an eye out for
+* **Ledger safety via decoupling.**
+   * Capital changes live in `app/ledger`, which only accepts a user id plus a cost or revenue.
+   * `GeneralLedger` rows are frozen (immutable); changes always produce a new entry.
+   * Pure helpers (`apply_purchase` / `apply_sale`) compute the next row without
+     mutating prior entries or module state; only successful results are appended.
+   * Buy/sell flows own domain rules (inventory stock, pricing), then call the ledger and sync onto
+     `User.general_ledger` so money math stays isolated, append-only, and easy
+     to unit-test without the rest of the stack.
+* **Auth stub for later swap-in.** 
+   * There is no real login yet. 
+   * Routes take `CurrentUser` via a FastAPI dependency that today resolves identity from
+     ``X-User-Id`` (or the single seeded user). 
+   * Replacing `resolve_current_user_id()` / `get_current_user()` with session/JWT logic
+     should not require rewriting route handlers.
+* **In-memory DB as a thin store.** 
+   * `app/database` holds dict-backed entities with get/set/list only — no business rules. 
+   * Ingredient prices are append-only version history; the ledger lives in its own module and is   
+     mirrored onto ``User``. 
+   * Seed data loads from JSON on import; `reset_db` clears everything for tests.
+   * A real database can replace this layer without rewriting domain services.
+* **Ledger timestamps are wall-clock for now.**
+   * Entries simply log ``datetime.now(UTC)`` when written.
+   * That sits awkwardly next to the game clock (1 game-hour = 1 real second):
+     many sale rows can share nearly the same real timestamp while spanning
+     many in-game hours. A better display (e.g. game day/hour on the ledger)
+     is left for later.
 
 ## Game loop
 
-1. `POST /game/start` → phase `day_start` with **$30** capital and empty stock
+1. `POST /game/start` → opening-balance seeds **$30** (if capital already exists, a reset-ledger row zeros it first); phase `day_start` with empty stock
 2. Buy ingredients and/or set lemonade prices
 3. `POST /game/continue` → phase `running`
-4. Background clock advances **1 game-hour every 3 real seconds**, auto-selling 1× `classic` per hour
+4. Background clock advances **1 game-hour every 1 real second**, auto-selling 1× `classic` per hour
 5. Day ends when stock cannot cover a sale **or** hour reaches 24 → leftover **ice is discarded**, then back to `day_start` (or `game_over` if capital is empty and inventory cannot make a lemonade)
+
+## Potential Extensions
+* Add a search functionality on the ledger page ? 
+* 

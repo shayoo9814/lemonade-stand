@@ -15,7 +15,7 @@ from app.ledger import get_ledger, list_entries
 from app.models import GamePhase, LedgerAction
 
 USER_ID = "u1"
-CLASSIC_PROFIT = Decimal("1.1725")
+CLASSIC_PRICE = Decimal("2.00")
 
 
 @pytest.fixture(autouse=True)
@@ -35,18 +35,38 @@ class TestStartGame:
         assert not inventory_service.can_make_lemonade()
         assert inventory_service.list_all() == []
 
-    def test_start_appends_opening_balance_without_erasing_history(self):
+    def test_first_start_seeds_opening_without_reset(self):
+        session = game_service.start_game(USER_ID)
+        assert session is not None
+        entries = list_entries(USER_ID)
+        assert len(entries) == 1
+        assert entries[0].action == LedgerAction.OPENING_BALANCE
+        assert entries[0].amount == Decimal("30.00")
+        assert entries[0].current_capital == Decimal("30.00")
+        assert get_ledger(USER_ID).current_capital == Decimal("30.00")
+
+    def test_start_appends_reset_then_opening_without_erasing_history(self):
         game_service.start_game(USER_ID)
         assert ingredients_service.buy(USER_ID, "lemons", unit_count=Decimal("1")) is True
+        # reset skipped (no prior) + opening + purchase
         assert len(list_entries(USER_ID)) == 2
+        capital_before_reset = get_ledger(USER_ID).current_capital
+        assert capital_before_reset == Decimal("29.40")
 
         game_service.start_game(USER_ID)
         entries = list_entries(USER_ID)
-        assert len(entries) == 3
+        # opening + purchase + reset-ledger + opening
+        assert len(entries) == 4
         assert entries[0].action == LedgerAction.OPENING_BALANCE
         assert entries[1].action == LedgerAction.PURCHASE
-        assert entries[2].action == LedgerAction.OPENING_BALANCE
-        assert entries[2].current_capital == Decimal("30.00")
+        assert entries[2].action == LedgerAction.RESET_LEDGER
+        assert entries[2].item_id == "reset-ledger"
+        assert entries[2].amount == capital_before_reset
+        assert entries[2].current_capital == Decimal("0")
+        assert entries[2].expenses_incurred == Decimal("0")
+        assert entries[3].action == LedgerAction.OPENING_BALANCE
+        assert entries[3].amount == Decimal("30.00")
+        assert entries[3].current_capital == Decimal("30.00")
         assert get_ledger(USER_ID).current_capital == Decimal("30.00")
 
     def test_start_unknown_user_returns_none(self):
@@ -120,7 +140,7 @@ class TestContinueAndTick:
         assert session.hour == 1
         assert session.phase == GamePhase.RUNNING
         assert get_inventory("lemons").amount == Decimal("11")
-        assert get_ledger(USER_ID).current_capital == capital_after_buy + CLASSIC_PROFIT
+        assert get_ledger(USER_ID).current_capital == capital_after_buy + CLASSIC_PRICE
 
     def test_stock_exhaustion_ends_day(self):
         game_service.start_game(USER_ID)

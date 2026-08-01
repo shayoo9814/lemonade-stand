@@ -16,6 +16,7 @@ SEED_TS = datetime(2026, 8, 1, tzinfo=timezone.utc)
 def _catalog() -> dict[str, Ingredient]:
     return {
         "lemons": Ingredient(
+            id="ingredient-lemons",
             name="lemons",
             amount=Decimal("1"),
             price=Decimal("0.60"),
@@ -23,6 +24,7 @@ def _catalog() -> dict[str, Ingredient]:
             timestamp=SEED_TS,
         ),
         "sugar": Ingredient(
+            id="ingredient-sugar",
             name="sugar",
             amount=Decimal("1"),
             price=Decimal("0.95"),
@@ -30,6 +32,7 @@ def _catalog() -> dict[str, Ingredient]:
             timestamp=SEED_TS,
         ),
         "cups": Ingredient(
+            id="ingredient-cups",
             name="cups",
             amount=Decimal("1"),
             price=Decimal("0.08"),
@@ -37,6 +40,7 @@ def _catalog() -> dict[str, Ingredient]:
             timestamp=SEED_TS,
         ),
         "ice": Ingredient(
+            id="ingredient-ice",
             name="ice",
             amount=Decimal("1"),
             price=Decimal("0.10"),
@@ -49,6 +53,7 @@ def _catalog() -> dict[str, Ingredient]:
 class TestIngredientBulkPricing:
     def test_unit_price_divides_bulk_pack(self):
         sugar = Ingredient(
+            id="ingredient-sugar",
             name="sugar",
             amount=Decimal("5"),
             price=Decimal("4.75"),
@@ -60,6 +65,7 @@ class TestIngredientBulkPricing:
     def test_recipe_cost_uses_unit_price(self):
         catalog = {
             "sugar": Ingredient(
+                id="ingredient-sugar",
                 name="sugar",
                 amount=Decimal("5"),
                 price=Decimal("4.75"),
@@ -68,6 +74,7 @@ class TestIngredientBulkPricing:
             ),
         }
         lemonade = Lemonade(
+            id="lemonade-sweet",
             name="sweet",
             price=Decimal("2.00"),
             recipe={"sugar": Decimal("0.05")},
@@ -79,6 +86,7 @@ class TestIngredientBulkPricing:
 class TestLemonadeRecipe:
     def test_recipe_cost_matches_ingredients(self):
         lemonade = Lemonade(
+            id="lemonade-classic",
             name="classic",
             price=Decimal("2.00"),
             recipe={
@@ -93,6 +101,7 @@ class TestLemonadeRecipe:
 
     def test_price_covering_recipe_passes(self):
         lemonade = Lemonade(
+            id="lemonade-classic",
             name="classic",
             price=Decimal("2.00"),
             recipe={"lemons": Decimal("1"), "cups": Decimal("1")},
@@ -101,6 +110,7 @@ class TestLemonadeRecipe:
 
     def test_price_below_recipe_cost_raises(self):
         lemonade = Lemonade(
+            id="lemonade-cheap",
             name="cheap",
             price=Decimal("0.50"),
             recipe={"lemons": Decimal("1"), "cups": Decimal("1")},
@@ -110,6 +120,7 @@ class TestLemonadeRecipe:
 
     def test_unknown_ingredient_raises(self):
         lemonade = Lemonade(
+            id="lemonade-mystery",
             name="mystery",
             price=Decimal("5.00"),
             recipe={"salt": Decimal("1")},
@@ -119,11 +130,12 @@ class TestLemonadeRecipe:
 
     def test_empty_recipe_rejected(self):
         with pytest.raises(ValidationError):
-            Lemonade(name="empty", price=Decimal("1.00"), recipe={})
+            Lemonade(id="lemonade-empty", name="empty", price=Decimal("1.00"), recipe={})
 
     def test_non_positive_recipe_amount_rejected(self):
         with pytest.raises(ValidationError):
             Lemonade(
+                id="lemonade-bad",
                 name="bad",
                 price=Decimal("1.00"),
                 recipe={"lemons": Decimal("0")},

@@ -2,8 +2,9 @@
 Lemonade application layer.
 
 Recipe catalog reads and sale orchestration. Persistence is delegated to
-``app.database``; stock changes go through ``app.inventory``; profit is
-recorded on the player's ledger via ``app.ledger``.
+``app.database``; stock changes go through ``app.inventory``; sale revenue
+is recorded on the player's ledger via ``app.ledger``. Ingredient costs are
+already on purchase rows, so sales credit the full sale price.
 """
 
 from decimal import Decimal
@@ -22,12 +23,13 @@ def get(name: str) -> Optional[Lemonade]:
 
 
 def sell(user_id: str, name: str, amount: Decimal) -> bool:
-    """Sell servings for a player; deduct inventory and credit profit.
+    """Sell servings for a player; deduct inventory and credit revenue.
 
-    ``amount`` is how many servings to sell. Profit is
-    ``(sale price − recipe cost) × amount``. Returns True on success,
-    False if the user/lemonade is unknown, amount is invalid, or stock
-    is insufficient.
+    ``amount`` is how many servings to sell. Revenue is
+    ``sale price × amount`` (ingredient costs were already booked on
+    purchase). The ledger row's ``item_id`` is the lemonade's ``id``.
+    Returns True on success, False if the user/lemonade is unknown,
+    amount is invalid, or stock is insufficient.
     """
     if amount <= 0:
         return False
@@ -45,13 +47,8 @@ def sell(user_id: str, name: str, amount: Decimal) -> bool:
     if not inventory_service.has_sufficient(requirements):
         return False
 
-    try:
-        cost = lemonade.recipe_cost(db.get_ingredients_catalog())
-    except ValueError:
-        return False
-
-    profit = (lemonade.price - cost) * amount
-    if not ledger_store.record_sale(user_id, profit):
+    revenue = lemonade.price * amount
+    if not ledger_store.record_sale(user_id, revenue, lemonade.id):
         return False
 
     users_service.sync_ledger(user_id)

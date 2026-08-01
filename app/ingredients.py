@@ -10,6 +10,7 @@ timestamped row.
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional
+from uuid import uuid4
 
 from app import database as db
 from app import inventory as inventory_service
@@ -34,9 +35,11 @@ def record_price(
     price: Decimal,
     unit: IngredientUnit,
     timestamp: Optional[datetime] = None,
+    id: Optional[str] = None,
 ) -> Ingredient:
     """Append a new price version for an ingredient (append-only history)."""
     kwargs: dict = {
+        "id": id or str(uuid4()),
         "name": name,
         "amount": amount,
         "price": price,
@@ -55,7 +58,7 @@ def buy(user_id: str, ingredient_name: str, unit_count: Decimal) -> bool:
     ``unit_count`` is the number of units to buy. Cost is always
     ``ingredient.unit_price × unit_count`` (derived from bulk catalog pricing).
     On success, adds ``unit_count`` units to inventory and records the purchase
-    on the player's general ledger.
+    on the player's general ledger (``item_id`` = ``Ingredient.id``).
 
     When a game session exists, purchases are only allowed during ``DAY_START``.
 
@@ -79,7 +82,7 @@ def buy(user_id: str, ingredient_name: str, unit_count: Decimal) -> bool:
         return False
 
     cost = ingredient.unit_price * unit_count
-    if not ledger_store.record_purchase(user_id, cost):
+    if not ledger_store.record_purchase(user_id, cost, ingredient.id):
         return False
 
     users_service.sync_ledger(user_id)

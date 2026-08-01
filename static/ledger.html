@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ledger · Lemonade Stand</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Figtree:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main class="stand ledger-page">
+    <header class="brand">
+      <p class="nav-links">
+        <a href="/play">← Back to stand</a>
+      </p>
+      <h1>General ledger</h1>
+      <p class="player" id="player-line" aria-live="polite">—</p>
+      <p class="meta">Append-only log of every capital change. Latest balance should match the stand.</p>
+    </header>
+
+    <section class="balance" aria-live="polite">
+      <p class="label">Ledger balance</p>
+      <p class="amount" id="balance">—</p>
+      <p class="verify" id="verify-line" hidden></p>
+    </section>
+
+    <section class="ledger" aria-labelledby="entries-heading">
+      <div class="ledger-heading">
+        <h2 id="entries-heading">Entries</h2>
+        <button type="button" id="btn-clear-ledger">Clear ledger</button>
+      </div>
+      <div class="ledger-table-wrap">
+        <table class="ledger-table">
+          <thead>
+            <tr>
+              <th scope="col">When</th>
+              <th scope="col">Action</th>
+              <th scope="col">Item</th>
+              <th scope="col">Amount</th>
+              <th scope="col">Balance</th>
+              <th scope="col">Expenses</th>
+            </tr>
+          </thead>
+          <tbody id="ledger-body">
+            <tr>
+              <td colspan="6" class="empty">No entries yet</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <p id="message" class="message" hidden></p>
+  </main>
+  <script src="/static/ledger.js"></script>
+</body>
+</html>

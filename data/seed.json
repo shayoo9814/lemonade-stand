@@ -8,6 +8,7 @@
   ],
   "ingredients": [
     {
+      "id": "ingredient-lemons",
       "name": "lemons",
       "amount": 1,
       "price": "0.60",
@@ -15,6 +16,7 @@
       "timestamp": "2026-08-01T00:00:00Z"
     },
     {
+      "id": "ingredient-sugar",
       "name": "sugar",
       "amount": 1,
       "price": "0.95",
@@ -22,6 +24,7 @@
       "timestamp": "2026-08-01T00:00:00Z"
     },
     {
+      "id": "ingredient-cups",
       "name": "cups",
       "amount": 1,
       "price": "0.08",
@@ -29,6 +32,7 @@
       "timestamp": "2026-08-01T00:00:00Z"
     },
     {
+      "id": "ingredient-ice",
       "name": "ice",
       "amount": 1,
       "price": "0.10",
@@ -39,6 +43,7 @@
   "inventory": [],
   "lemonades": [
     {
+      "id": "lemonade-classic",
       "name": "classic",
       "price": "2.00",
       "recipe": {
